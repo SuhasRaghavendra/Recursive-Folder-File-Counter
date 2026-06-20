@@ -1,113 +1,66 @@
-# Recursive File Folder Counter
+# Recursive File Folder Counter (DAA Edition)
 
-Terminal-based C application that counts files and folders using three traversal algorithms:
+A high-performance Windows C application and interactive Node.js Web Dashboard designed to analyze, benchmark, and visualize fundamental tree-traversal algorithms (**Recursive DFS**, **Iterative DFS**, and **BFS**) under the lens of **Design and Analysis of Algorithms (DAA)**.
 
-- Recursive DFS
-- Iterative DFS with an explicit stack
-- BFS with an explicit queue
+The system performs real-world scans on arbitrary directories, stress-tests itself against extreme synthetic directory structures, and provides empirical validation for time/space complexity, amortized growth analysis, and graph theory cycle detection.
 
-The program compares all three algorithms for the same scan task and prints file count, folder count, total items, maximum depth, skipped folders, access errors, and execution time.
+---
 
-## Features
+## 🚀 Quick Start
 
-- Scan a specific folder.
-- Scan a specific drive such as `C:\`.
-- Scan all accessible fixed drives.
-- Compare Recursive DFS, Iterative DFS, and BFS.
-- Skip Windows reparse points, symbolic links, and junctions to avoid cycles.
-- Continue scanning when some folders are inaccessible.
-- Accept folder paths containing spaces.
-
-## Build
-
-This project targets Windows and uses the Windows API.
-
-With GCC installed, run:
-
-```bat
-build.bat
+### 1. Build the C Backend
+This project targets Windows and uses native Win32 APIs for high-performance directory traversal. With GCC installed, compile the backend using the provided batch script:
+```powershell
+.\build.bat
 ```
+The compiled executable is created at `build\recursive_file_folder_counter.exe`.
 
-The executable will be created at:
-
-```text
-build\recursive_file_folder_counter.exe
+### 2. Run the Interactive Web Dashboard
+The web dashboard is a zero-dependency application that does not require any `npm install` packages.
+```powershell
+cd frontend
+node server.js
 ```
+Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
-## Run
+---
 
-```bat
-build\recursive_file_folder_counter.exe
-```
+## 🎨 Web Dashboard features
 
-Menu:
+* **Visual Comparison Charts**: Real-time bar charts rendering **Execution Time (ns)**, **Peak Memory Nodes**, **Reallocation Count**, and **Time per Node (ns)**.
+* **Empirical Insights & Takeaways**: Dynamic analysis card generated on every directory scan and benchmark, explaining *why* a particular algorithm was faster/slower and *how* the directory shape (wide vs. deep) impacted the space footprints.
+* **Interactive Sibling Visualizations**: Fully animated SVG tree widgets showcasing DFS (pre-order) and BFS (level-order) traversal patterns in real-time.
+* **CLI fallback**: Standard interactive command-line interface available by running `build\recursive_file_folder_counter.exe`.
 
-```text
-1. Scan a specific folder
-2. Scan a specific drive
-3. Scan all accessible fixed drives
-4. Exit
-```
+---
 
-Each scan automatically runs all three algorithms and prints a comparison table.
+## 🧪 Synthetic Benchmark Stress Tests
 
-## Sample Output
+The application generates extreme synthetic filesystem structures inside the system's temporary directory to test boundary-case behaviors:
 
-```text
-Scan target: C:\Users\Suhas\Documents
+1. **Deep Tree (Chain Graph)**: 
+   * *Structure*: 200 nested levels, 1 subfolder per level.
+   * *DAA Goal*: Validates **$O(h)$ space complexity** for DFS. Highlights the hardware call stack frame accumulation in Recursive DFS vs. the lightweight iterative heap approach.
+   * *Win32 Bypass*: Prepends the Win32 extended path prefix (`\\?\`) to bypass the legacy 260-character path limit (`MAX_PATH`) and create the full 200-level directory chain.
+2. **Wide Tree (Star Graph)**:
+   * *Structure*: 1,000 folders directly at the root level.
+   * *DAA Goal*: Validates **$O(w)$ space complexity** for BFS. Proves how BFS is forced to hold the entire level's frontier simultaneously, consuming $1000\times$ more memory than Recursive DFS on flat hierarchies.
 
-+----------------+------------+-------------+-------------+-----------+---------+---------------+------------+
-| Algorithm      | Files      | Folders     | Total Items | Max Depth | Skipped | Access Errors | Time (sec) |
-+----------------+------------+-------------+-------------+-----------+---------+---------------+------------+
-| Recursive DFS  |      12450 |        1820 |       14270 |        16 |       3 |             7 |     1.8400 |
-| Iterative DFS  |      12450 |        1820 |       14270 |        16 |       3 |             7 |     1.7600 |
-| BFS            |      12450 |        1820 |       14270 |        16 |       3 |             7 |     1.9300 |
-+----------------+------------+-------------+-------------+-----------+---------+---------------+------------+
+---
 
-Fastest algorithm: Iterative DFS
-Result check: All algorithms produced matching counts.
-```
+## 🔬 Core DAA Concepts Evaluated
 
-## DAA Explanation
+| Feature & Concept | implementation details |
+| :--- | :--- |
+| **Space Complexity & Peak Memory** | Tracks `peakMemoryNodes` representing the maximum occupancy of the DFS Stack / BFS Queue. Proves DFS is bound by height $O(h)$ and BFS is bound by width $O(w)$ dynamically. |
+| **Amortized Analysis (Resizing)** | Compares **Double Growth** (`GROWTH_DOUBLE` - capacity doubles on resize, $O(1)$ amortized push) vs **Linear Growth** (`GROWTH_LINEAR` - capacity grows by a fixed step, $O(N)$ amortized push, $O(N^2)$ total copy time) via `reallocCount`. |
+| **Constant-Factor Isolation** | The `Time/Node (ns)` metric isolates the constant factor $c$ hidden inside $O(N)$ time complexity. This quantifies the performance difference between recursion (compiler/hardware call stack overhead) and custom heap-allocated structures. |
+| **Graph Theory Cycle Detection** | An open-addressing hash table (`hashtable.c`) stores filesystem device IDs to dynamically identify and skip genuine directory loops (e.g., recursive junctions, circular mount points) rather than relying solely on file attribute flags. |
 
-The computer filesystem can be modeled as a tree:
+---
 
-- A selected folder or drive is the root.
-- Subfolders are child nodes.
-- Files are leaf nodes.
+## 🛡️ Stability & Memory Optimizations
 
-The program traverses this tree and counts every reachable file and folder.
-
-| Algorithm | Traversal Style | Data Structure | Time Complexity | Space Complexity |
-|---|---|---|---|---|
-| Recursive DFS | Depth-first | Call stack | `O(F + D)` | `O(H)` |
-| Iterative DFS | Depth-first | Explicit stack | `O(F + D)` | `O(H)` average, up to `O(D)` |
-| BFS | Level-order | Queue | `O(F + D)` | Up to `O(W)` |
-
-Where:
-
-- `F` is the number of files.
-- `D` is the number of directories.
-- `H` is the maximum folder depth.
-- `W` is the maximum number of folders at one level.
-
-All three algorithms visit every reachable file and directory once, so their theoretical time complexity is the same. Their practical time differs because of data structure overhead, traversal order, disk behavior, and operating system caching.
-
-## Safety Notes
-
-- `.` and `..` are skipped.
-- Reparse points are skipped to avoid infinite traversal cycles.
-- Inaccessible folders are counted as access errors and scanning continues.
-- Full-computer scan means all accessible fixed drives. Removable, network, and optical drives are excluded.
-
-## Suggested Tests
-
-- Empty folder.
-- Folder with only files.
-- Folder with nested subfolders.
-- Folder whose path contains spaces.
-- Invalid path.
-- Protected folder with permission errors.
-- Folder containing a junction or symbolic link.
-- Specific drive scan.
-- All fixed drives scan.
+* **Stack Overflow Prevention**: The recursive DFS algorithm has been optimized to use **dynamic heap buffers** (`malloc` / `free`) for search patterns and path strings instead of allocating massive stack buffers (`char path[32768]`). This reduces each stack frame from $\sim 64\text{KB}$ to just a few pointers ($\sim 16\text{B}$), allowing safe traversal to any depth.
+* **Leak Protection**: Cleanups are integrated on all error conditions and traversal termination paths to guarantee zero memory leaks.
+* **Reparse Point Skipping**: Default configurations filter out junction points, symbolic links, and circular reparse targets to keep scans safe and accurate.
