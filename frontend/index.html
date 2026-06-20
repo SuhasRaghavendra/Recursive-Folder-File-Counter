@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DAA File System Analyzer — Algorithm Comparison Dashboard</title>
+  <meta name="description" content="Compare Recursive DFS, Iterative DFS, and BFS algorithms for filesystem traversal — DAA project dashboard." />
+
+  <!-- Chart.js from CDN — only external dependency -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* ============================================================
+       DESIGN SYSTEM
+       ============================================================ */
+    :root {
+      --bg:          #0a0e1a;
+      --bg2:         #111827;
+      --bg3:         #1a2235;
+      --border:      #1e2d45;
+      --accent-blue: #3b82f6;
+      --accent-cyan: #06b6d4;
+      --accent-purple:#a855f7;
+      --accent-green: #10b981;
+      --accent-orange:#f59e0b;
+      --accent-red:   #ef4444;
+      --text:        #f1f5f9;
+      --text-muted:  #94a3b8;
+      --text-dim:    #475569;
+      --card-radius: 16px;
+      --transition:  0.25s ease;
+
+      /* Algorithm colours (consistent across all charts) */
+      --c-rdfs:  #3b82f6;
+      --c-idfs:  #a855f7;
+      --c-bfs:   #10b981;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ---- Typography ---- */
+    h1 { font-size: 2rem;   font-weight: 700; letter-spacing: -0.5px; }
+    h2 { font-size: 1.25rem; font-weight: 600; }
+    h3 { font-size: 1rem;   font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* ---- Layout ---- */
+    .page-wrapper   { max-width: 1400px; margin: 0 auto; padding: 0 24px 60px; }
+
+    /* ---- Header ---- */
+    header {
+      background: linear-gradient(135deg, #0f1729 0%, #1a0f2e 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 0 24px;
+      position: sticky; top: 0; z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+    .header-inner {
+      max-width: 1400px; margin: 0 auto; padding: 0 24px;
+      display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    }
+    .header-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; flex-shrink: 0;
+    }
+    .header-text h1 { font-size: 1.5rem; }
+    .header-text p  { color: var(--text-muted); font-size: 0.85rem; margin-top: 2px; }
+    .algo-pills { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+    .pill {
+      padding: 4px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 600;
+      border: 1px solid;
+    }
+    .pill-blue   { background: #1e3a5f; border-color: var(--c-rdfs); color: var(--c-rdfs); }
+    .pill-purple { background: #2d1b4e; border-color: var(--c-idfs); color: var(--c-idfs); }
+    .pill-green  { background: #0d2e22; border-color: var(--c-bfs);  color: var(--c-bfs);  }
+
+    /* ---- Section heading ---- */
+    .section-heading {
+      display: flex; align-items: center; gap: 10px;
+      margin: 40px 0 20px;
+    }
+    .section-heading .line {
+      flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* ---- Cards ---- */
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 24px;
+    }
+    .card-glow-blue   { box-shadow: 0 0 0 1px rgba(59,130,246,.15), 0 8px 32px rgba(59,130,246,.08); }
+    .card-glow-purple { box-shadow: 0 0 0 1px rgba(168,85,247,.15), 0 8px 32px rgba(168,85,247,.08); }
+    .card-glow-green  { box-shadow: 0 0 0 1px rgba(16,185,129,.15), 0 8px 32px rgba(16,185,129,.08); }
+
+    /* ---- Input panel ---- */
+    .input-panel {
+      background: linear-gradient(135deg, var(--bg2) 0%, var(--bg3) 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 28px 32px;
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .input-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .path-input {
+      flex: 1; min-width: 280px;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+      color: var(--text); padding: 12px 16px; font-size: 0.95rem; font-family: 'Consolas', monospace;
+      transition: border-color var(--transition);
+      outline: none;
+    }
+    .path-input:focus { border-color: var(--accent-blue); }
+    .path-input::placeholder { color: var(--text-dim); }
+
+    .btn {
+      padding: 12px 24px; border: none; border-radius: 10px; cursor: pointer;
+      font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 8px;
+      transition: all var(--transition); white-space: nowrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+      color: #fff;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(59,130,246,.4); }
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--accent-purple), #7c3aed);
+      color: #fff;
+    }
+    .btn-secondary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(168,85,247,.4); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+    /* ---- Spinner ---- */
+    .spinner {
+      width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin 0.7s linear infinite; display: none;
+    }
+    .loading .spinner { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---- Status bar ---- */
+    #status-bar {
+      display: none; align-items: center; gap: 8px;
+      font-size: 0.85rem; color: var(--text-muted);
+      padding: 8px 12px; background: var(--bg3); border-radius: 8px;
+    }
+    #status-bar.visible { display: flex; }
+    #status-bar.error   { color: var(--accent-red); border: 1px solid rgba(239,68,68,.3); }
+    #status-bar.success { color: var(--accent-green); border: 1px solid rgba(16,185,129,.3); }
+
+    /* ---- Results section ---- */
+    #results { display: none; }
+    #results.visible { display: block; }
+
+    /* ---- Metric cards row ---- */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 900px) { .metrics-grid { grid-template-columns: 1fr; } }
+
+    .metric-card {
+      border-radius: var(--card-radius); padding: 20px 22px;
+      border: 1px solid var(--border); position: relative; overflow: hidden;
+    }
+    .metric-card::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, var(--card-accent, #3b82f6) 0%, transparent 60%);
+      opacity: 0.07; pointer-events: none;
+    }
+    .metric-card.rdfs { --card-accent: var(--c-rdfs); background: var(--bg2); }
+    .metric-card.idfs { --card-accent: var(--c-idfs); background: var(--bg2); }
+    .metric-card.bfs  { --card-accent: var(--c-bfs);  background: var(--bg2); }
+
+    .metric-label {
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;
+      font-weight: 700; margin-bottom: 12px;
+    }
+    .metric-label.rdfs { color: var(--c-rdfs); }
+    .metric-label.idfs { color: var(--c-idfs); }
+    .metric-label.bfs  { color: var(--c-bfs);  }
+
+    .metric-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+    .metric-name  { font-size: 0.82rem; color: var(--text-muted); }
+    .metric-value { font-size: 1.1rem;  font-weight: 700; font-family: 'Consolas', monospace; color: var(--text); }
+    .metric-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 6px;
+      font-size: 0.7rem; font-weight: 700; margin-left: 6px;
+    }
+    .badge-fastest { background: rgba(16,185,129,.15); color: var(--accent-green); border: 1px solid rgba(16,185,129,.3); }
+
+    /* ---- Charts grid ---- */
+    .charts-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+    }
+    @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+    .insights-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;
+    }
+    @media (max-width: 900px) { .insights-grid { grid-template-columns: 1fr; } }
+
+    .chart-card { position: relative; padding-bottom: 12px; }
+    .chart-card h3 { margin-bottom: 16px; }
+    .chart-wrapper { position: relative; height: 240px; }
+
+    /* ---- DAA Concepts panel ---- */
+    .concepts-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    @media (max-width: 900px) { .concepts-grid { grid-template-columns: 1fr; } }
+
+    .concept-card {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+    }
+    .concept-icon { font-size: 1.8rem; margin-bottom: 10px; }
+    .concept-card h3 { font-size: 0.9rem; color: var(--text); text-transform: none; letter-spacing: 0; margin-bottom: 6px; }
+    .concept-card p  { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; }
+    .concept-value { margin-top: 10px; font-family: 'Consolas', monospace; font-size: 1.1rem; font-weight: 700; color: var(--accent-cyan); }
+
+    /* ---- Tree animation ---- */
+    .traversal-panel {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    }
+    @media (max-width: 900px) { .traversal-panel { grid-template-columns: 1fr; } }
+
+    .traversal-box {
+      background: var(--bg3); border-radius: 12px; padding: 20px;
+      border: 1px solid var(--border);
+    }
+    .traversal-box h3 {
+      font-size: 0.85rem; font-weight: 700; margin-bottom: 14px;
+      text-transform: none; letter-spacing: 0;
+    }
+    .tree-svg { width: 100%; height: 220px; }
+    .visit-log {
+      margin-top: 10px; font-size: 0.75rem; color: var(--text-muted);
+      font-family: 'Consolas', monospace; min-height: 20px;
+    }
+    .animate-btn {
+      margin-top: 12px; padding: 6px 16px;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); cursor: pointer;
+      font-size: 0.8rem; transition: all var(--transition);
+    }
+    .animate-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+
+    /* ---- Benchmark panel ---- */
+    .benchmark-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 900px) { .benchmark-grid { grid-template-columns: 1fr; } }
+
+    /* ---- Table ---- */
+    .result-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .result-table th {
+      text-align: left; padding: 10px 14px;
+      color: var(--text-muted); border-bottom: 1px solid var(--border);
+      font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .result-table td { padding: 10px 14px; border-bottom: 1px solid rgba(30,45,69,.5); }
+    .result-table tr:last-child td { border-bottom: none; }
+    .result-table .num { font-family: 'Consolas', monospace; }
+
+    /* ---- Footer ---- */
+    footer {
+      text-align: center; padding: 32px 0 16px;
+      color: var(--text-dim); font-size: 0.8rem; border-top: 1px solid var(--border);
+      margin-top: 60px;
+    }
+
+    /* ---- Utilities ---- */
+    .fade-in { animation: fadeIn 0.4s ease both; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+    .highlight-box {
+      background: linear-gradient(135deg, rgba(59,130,246,.1), rgba(168,85,247,.1));
+      border: 1px solid rgba(59,130,246,.2); border-radius: 10px; padding: 14px 18px;
+      font-size: 0.85rem; color: var(--text-muted); line-height: 1.6;
+    }
+    .highlight-box strong { color: var(--text); }
+
+    /* Node colours in SVG tree */
+    .node-unvisited { fill: #1e2d45; stroke: #334155; stroke-width: 2; }
+    .node-visiting  { fill: #fbbf24; stroke: #f59e0b; stroke-width: 2.5; }
+    .node-visited   { fill: #1e3a5f; stroke: var(--c-rdfs); stroke-width: 2; }
+    .node-visited-bfs{ fill: #0d2e22; stroke: var(--c-bfs); stroke-width: 2; }
+    .edge           { stroke: #334155; stroke-width: 1.5; }
+  </style>
+</head>
+<body>
+
+<!-- ================================================================
+     HEADER
+================================================================ -->
+<header>
+  <div class="header-inner">
+    <div class="header-icon">🌲</div>
+    <div class="header-text">
+      <h1>DAA File System Analyzer</h1>
+      <p>Recursive DFS · Iterative DFS · BFS — Space &amp; Time Complexity Comparison</p>
+    </div>
+    <div class="algo-pills">
+      <span class="pill pill-blue">Recursive DFS  O(h)</span>
+      <span class="pill pill-purple">Iterative DFS  O(h)</span>
+      <span class="pill pill-green">BFS  O(w)</span>
+    </div>
+  </div>
+</header>
+
+<!-- ================================================================
+     MAIN CONTENT
+================================================================ -->
+<div class="page-wrapper">
+
+  <!-- ---- DAA Concepts always-visible intro ---- -->
+  <div class="section-heading">
+    <h3>Algorithm Theory</h3><div class="line"></div>
+  </div>
+
+  <div class="concepts-grid" style="margin-bottom: 12px;">
+    <div class="concept-card">
+      <div class="concept-icon">🔵</div>
+      <h3>Recursive DFS</h3>
+      <p>Uses the <strong>call stack</strong> implicitly. Risks overflow on extremely deep trees. Simple and elegant.</p>
+      <div class="concept-value">Space: O(h)</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-icon">🟣</div>
+      <h3>Iterative DFS</h3>
+      <p>Heap-allocated <strong>explicit stack</strong>. Overflow-safe. Peak nodes = maximum directory depth.</p>
+      <div class="concept-value">Space: O(h)</div>
+    </div>
+    <div class="concept-card">
+      <div class="concept-icon">🟢</div>
+      <h3>BFS</h3>
+      <p>Heap-allocated <strong>circular queue</strong>. Explores level-by-level. Peak nodes = widest level.</p>
+      <div class="concept-value">Space: O(w)</div>
+    </div>
+  </div>
+
+  <!-- ---- Input Panel ---- -->
+  <div class="section-heading">
+    <h3>Run a Scan</h3><div class="line"></div>
+  </div>
+
+  <div class="input-panel">
+    <div class="input-row">
+      <input id="path-input" class="path-input" type="text"
+             placeholder="Enter directory path, e.g.  C:\Users\Admin\Documents"
+             value="" />
+      <button id="scan-btn" class="btn btn-primary" onclick="startScan()">
+        <div class="spinner" id="scan-spinner"></div>
+        <span id="scan-label">⚡ Scan</span>
+      </button>
+      <button id="bench-btn" class="btn btn-secondary" onclick="startBenchmark()">
+        <div class="spinner" id="bench-spinner"></div>
+        <span id="bench-label">🧪 Synthetic Benchmark</span>
+      </button>
+    </div>
+
+    <div id="status-bar">
+      <span id="status-icon">⏳</span>
+      <span id="status-text">Scanning…</span>
+    </div>
+
+    <div class="highlight-box">
+      <strong>How it works:</strong> The dashboard spawns the C backend
+      (<code>recursive_file_folder_counter.exe --json</code>) which runs all three
+      traversal algorithms and returns structured JSON. Results are rendered
+      into the charts below in real-time.
+    </div>
+  </div>
+
+  <!-- ================================================================
+       RESULTS (hidden until scan completes)
+  ================================================================ -->
+  <div id="results">
+
+    <!-- Metric cards -->
+    <div class="section-heading">
+      <h3>Scan Results</h3><div class="line"></div>
+      <span id="scan-target" style="font-size:0.8rem; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:300px;"></span>
+    </div>
+
+    <div class="metrics-grid fade-in">
+      <div class="metric-card rdfs">
+        <div class="metric-label rdfs">🔵 Recursive DFS</div>
+        <div class="metric-row"><span class="metric-name">Files</span>        <span class="metric-value num" id="r-files">—</span></div>
+        <div class="metric-row"><span class="metric-name">Folders</span>      <span class="metric-value num" id="r-folders">—</span></div>
+        <div class="metric-row"><span class="metric-name">Time (s)</span>     <span class="metric-value num" id="r-time">—</span></div>
+        <div class="metric-row"><span class="metric-name">Max Depth</span>    <span class="metric-value num" id="r-depth">—</span></div>
+        <div class="metric-row"><span class="metric-name">Peak Nodes</span>   <span class="metric-value num" id="r-peak">— <small style="font-size:0.7rem;color:var(--text-dim)">(call stack)</small></span></div>
+        <div class="metric-row"><span class="metric-name">Time/Node ns</span><span class="metric-value num" id="r-tpn">—</span></div>
+      </div>
+
+      <div class="metric-card idfs">
+        <div class="metric-label idfs">🟣 Iterative DFS</div>
+        <div class="metric-row"><span class="metric-name">Files</span>        <span class="metric-value num" id="i-files">—</span></div>
+        <div class="metric-row"><span class="metric-name">Folders</span>      <span class="metric-value num" id="i-folders">—</span></div>
+        <div class="metric-row"><span class="metric-name">Time (s)</span>     <span class="metric-value num" id="i-time">—</span></div>
+        <div class="metric-row"><span class="metric-name">Max Depth</span>    <span class="metric-value num" id="i-depth">—</span></div>
+        <div class="metric-row"><span class="metric-name">Peak Nodes</span>   <span class="metric-value num" id="i-peak">—</span></div>
+        <div class="metric-row"><span class="metric-name">Time/Node ns</span><span class="metric-value num" id="i-tpn">—</span></div>
+      </div>
+
+      <div class="metric-card bfs">
+        <div class="metric-label bfs">🟢 BFS</div>
+        <div class="metric-row"><span class="metric-name">Files</span>        <span class="metric-value num" id="b-files">—</span></div>
+        <div class="metric-row"><span class="metric-name">Folders</span>      <span class="metric-value num" id="b-folders">—</span></div>
+        <div class="metric-row"><span class="metric-name">Time (s)</span>     <span class="metric-value num" id="b-time">—</span></div>
+        <div class="metric-row"><span class="metric-name">Max Depth</span>    <span class="metric-value num" id="b-depth">—</span></div>
+        <div class="metric-row"><span class="metric-name">Peak Nodes</span>   <span class="metric-value num" id="b-peak">—</span></div>
+        <div class="metric-row"><span class="metric-name">Time/Node ns</span><span class="metric-value num" id="b-tpn">—</span></div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="section-heading" style="margin-top:36px;">
+      <h3>Visual Comparison</h3><div class="line"></div>
+    </div>
+
+    <div class="charts-grid fade-in">
+      <div class="card chart-card">
+        <h3>⏱️ Execution Time (nanoseconds)</h3>
+        <div class="chart-wrapper"><canvas id="chart-time"></canvas></div>
+      </div>
+      <div class="card chart-card">
+        <h3>📦 Peak Memory Nodes</h3>
+        <div class="chart-wrapper"><canvas id="chart-memory"></canvas></div>
+      </div>
+      <div class="card chart-card">
+        <h3>🔄 Reallocation Count (Amortized Analysis)</h3>
+        <div class="chart-wrapper"><canvas id="chart-realloc"></canvas></div>
+      </div>
+      <div class="card chart-card">
+        <h3>⚡ Time per Node (nanoseconds)</h3>
+        <div class="chart-wrapper"><canvas id="chart-tpn"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Scan Insights card -->
+    <div class="card card-glow-purple fade-in" style="margin-top:24px;">
+      <h3 style="margin-bottom:16px;color:var(--accent-cyan);display:flex;align-items:center;gap:8px;">
+        💡 Scan Complexity Analysis &amp; Traversal Insights
+      </h3>
+      <div id="scan-insights-content"></div>
+    </div>
+
+  </div><!-- /#results -->
+
+  <!-- ================================================================
+       BENCHMARK RESULTS (shown after synthetic benchmark)
+  ================================================================ -->
+  <div id="benchmark-results" style="display:none;">
+    <div class="section-heading" style="margin-top:48px;">
+      <h3>Synthetic Benchmark</h3><div class="line"></div>
+    </div>
+
+    <div class="benchmark-grid fade-in">
+      <div class="card card-glow-blue">
+        <h2 style="margin-bottom:4px;">Deep Tree  <small style="color:var(--text-muted);font-size:0.75rem;">200 levels deep, 1 folder per level</small></h2>
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:16px;">Expected: DFS peak ≈ 200 · BFS peak ≈ 1</p>
+        <div class="chart-wrapper"><canvas id="chart-bench-deep"></canvas></div>
+        <div id="bench-deep-metrics" style="margin-top:20px;"></div>
+      </div>
+      <div class="card card-glow-green">
+        <h2 style="margin-bottom:4px;">Wide Tree  <small style="color:var(--text-muted);font-size:0.75rem;">1,000 folders at root level</small></h2>
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:16px;">Expected: DFS peak ≈ 1 · BFS peak ≈ 1,000</p>
+        <div class="chart-wrapper"><canvas id="chart-bench-wide"></canvas></div>
+        <div id="bench-wide-metrics" style="margin-top:20px;"></div>
+      </div>
+    </div>
+
+    <!-- Takeaways card -->
+    <div class="card card-glow-purple fade-in" style="margin-top:24px;">
+      <h3 style="margin-bottom:16px;color:var(--c-idfs);display:flex;align-items:center;gap:8px;">
+        💡 Empirical Complexity Analysis &amp; Insights
+      </h3>
+      <div id="bench-insights-content"></div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       TRAVERSAL ANIMATION (always visible)
+  ================================================================ -->
+  <div class="section-heading" style="margin-top:48px;">
+    <h3>Algorithm Visualisation</h3><div class="line"></div>
+  </div>
+
+  <div class="traversal-panel">
+    <div class="traversal-box card-glow-blue">
+      <h3 style="color:var(--c-rdfs);">🔵 DFS — Depth-First (goes as deep as possible first)</h3>
+      <svg id="svg-dfs" class="tree-svg" viewBox="0 0 340 220"></svg>
+      <div class="visit-log" id="log-dfs">Press Animate ↓</div>
+      <button class="animate-btn" onclick="animateDFS()">▶ Animate DFS</button>
+    </div>
+    <div class="traversal-box card-glow-green">
+      <h3 style="color:var(--c-bfs);">🟢 BFS — Breadth-First (explores each level fully first)</h3>
+      <svg id="svg-bfs" class="tree-svg" viewBox="0 0 340 220"></svg>
+      <div class="visit-log" id="log-bfs">Press Animate ↓</div>
+      <button class="animate-btn" onclick="animateBFS()">▶ Animate BFS</button>
+    </div>
+  </div>
+
+</div><!-- /.page-wrapper -->
+
+<footer>
+  <p>Recursive File Folder Counter · DAA Edition · Algorithms: Recursive DFS | Iterative DFS | BFS</p>
+</footer>
+
+<!-- ================================================================
+     JAVASCRIPT
+================================================================ -->
+<script>
+/* ---- Global chart instances (so we can destroy/recreate) ---- */
+let chartTime, chartMem, chartRealloc, chartTpn, chartBenchDeep, chartBenchWide;
+
+const ALGO_LABELS  = ['Recursive DFS', 'Iterative DFS', 'BFS'];
+const ALGO_COLORS  = ['#3b82f6', '#a855f7', '#10b981'];
+const ALGO_BG      = ['rgba(59,130,246,.15)', 'rgba(168,85,247,.15)', 'rgba(16,185,129,.15)'];
+
+/* ---- Chart factory ---- */
+function makeBarChart(canvasId, label, data, unit) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    return new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ALGO_LABELS,
+            datasets: [{
+                label: label,
+                data:  data,
+                backgroundColor: ALGO_BG,
+                borderColor:     ALGO_COLORS,
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: { label: ctx => ` ${fmt(ctx.raw)} ${unit}` }
+                }
+            },
+            scales: {
+                x: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+                y: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8', font: { size: 11 }, callback: value => fmt(value) },
+                     beginAtZero: true }
+            },
+            animation: { duration: 700, easing: 'easeOutQuart' }
+        }
+    });
+}
+
+function fmt(n) {
+    if (n === undefined || n === null || isNaN(n)) return '—';
+    if (n > 1e9)  return (n / 1e9).toFixed(2) + 'B';
+    if (n > 1e6)  return (n / 1e6).toFixed(2) + 'M';
+    if (n > 1e3)  return (n / 1e3).toFixed(1) + 'K';
+    if (n % 1 !== 0) return n.toFixed(4);
+    return n.toLocaleString();
+}
+
+/* ---- Scan ---- */
+async function startScan() {
+    const path = document.getElementById('path-input').value.trim();
+    if (!path) { showStatus('Please enter a directory path.', 'error'); return; }
+
+    setLoading('scan', true);
+    showStatus('Running all three algorithms…', '');
+
+    try {
+        const res  = await fetch('/scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Scan failed');
+
+        renderResults(data.result);
+        showStatus(`Scan complete — ${fmt(data.result.algorithms.recursiveDfs.totalItems)} items found.`, 'success');
+    } catch (e) {
+        showStatus('Error: ' + e.message, 'error');
+    }
+
+    setLoading('scan', false);
+}
+
+async function startBenchmark() {
+    setLoading('bench', true);
+    showStatus('Running synthetic benchmark (deep + wide tree)… this may take a moment…', '');
+
+    try {
+        const res  = await fetch('/benchmark', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Benchmark failed');
+
+        renderBenchmark(data);
+        showStatus('Benchmark complete.', 'success');
+    } catch (e) {
+        showStatus('Error: ' + e.message, 'error');
+    }
+
+    setLoading('bench', false);
+}
+
+/* ---- Render scan results ---- */
+function renderResults(result) {
+    const r = result.algorithms.recursiveDfs;
+    const i = result.algorithms.iterativeDfs;
+    const b = result.algorithms.bfs;
+
+    document.getElementById('scan-target').textContent = result.target;
+
+    /* Metric cards */
+    const fill = (pfx, s) => {
+        document.getElementById(`${pfx}-files`).textContent   = fmt(s.fileCount);
+        document.getElementById(`${pfx}-folders`).textContent = fmt(s.folderCount);
+        document.getElementById(`${pfx}-time`).textContent    = s.timeTaken.toFixed(4);
+        document.getElementById(`${pfx}-depth`).textContent   = s.maxDepth;
+        document.getElementById(`${pfx}-peak`).textContent    = fmt(s.peakMemoryNodes);
+        document.getElementById(`${pfx}-tpn`).textContent     = s.timePerNodeNs.toFixed(2);
+    };
+    fill('r', r); fill('i', i); fill('b', b);
+
+    /* Badge for fastest */
+    ['r', 'i', 'b'].forEach(p => {
+        const el = document.getElementById(`${p}-time`);
+        const existing = el.querySelector('.metric-badge');
+        if (existing) existing.remove();
+    });
+    const fastest = result.fastest;
+    const fastestPfx = fastest.includes('Recursive') ? 'r' : fastest.includes('Iterative') ? 'i' : 'b';
+    const badge = document.createElement('span');
+    badge.className = 'metric-badge badge-fastest'; badge.textContent = '⚡ fastest';
+    document.getElementById(`${fastestPfx}-time`).appendChild(badge);
+
+    /* Charts */
+    if (chartTime)    chartTime.destroy();
+    if (chartMem)     chartMem.destroy();
+    if (chartRealloc) chartRealloc.destroy();
+    if (chartTpn)     chartTpn.destroy();
+
+    chartTime    = makeBarChart('chart-time',    'Time (ns)',     [r.timeTaken * 1e9, i.timeTaken * 1e9, b.timeTaken * 1e9], 'ns');
+    chartMem     = makeBarChart('chart-memory',  'Peak Nodes',    [r.peakMemoryNodes, i.peakMemoryNodes, b.peakMemoryNodes], 'nodes');
+    chartRealloc = makeBarChart('chart-realloc', 'Reallocs',      [r.reallocCount,    i.reallocCount,    b.reallocCount],    'reallocations');
+    chartTpn     = makeBarChart('chart-tpn',     'Time/Node(ns)', [r.timePerNodeNs,   i.timePerNodeNs,   b.timePerNodeNs],   'ns');
+
+    // Generate dynamic scan insights
+    let shapeText = "";
+    let shapeIcon = "";
+    if (b.peakMemoryNodes > 8 * r.maxDepth && r.maxDepth < 12) {
+        shapeIcon = "🌳";
+        shapeText = `This directory structure is <strong>wide and shallow</strong> (BFS peak queue size of ${fmt(b.peakMemoryNodes)} is much larger than max depth of ${r.maxDepth}).`;
+    } else if (r.maxDepth > 25 && b.peakMemoryNodes < 3 * r.maxDepth) {
+        shapeIcon = "🌲";
+        shapeText = `This directory structure is <strong>deep and narrow</strong> (max depth reached ${r.maxDepth} levels, while BFS peak queue was kept small at ${fmt(b.peakMemoryNodes)}).`;
+    } else {
+        shapeIcon = "🌿";
+        shapeText = `This directory structure has a <strong>balanced or typical</strong> tree layout (depth: ${r.maxDepth}, maximum layer width: ${fmt(b.peakMemoryNodes)}).`;
+    }
+
+    let spaceComparison = "";
+    if (r.peakMemoryNodes > b.peakMemoryNodes) {
+        spaceComparison = `For this scan, <strong>BFS was more memory-efficient</strong>, holding a peak of ${fmt(b.peakMemoryNodes)} nodes, compared to DFS which peaked at ${fmt(r.peakMemoryNodes)} active nodes.`;
+    } else if (b.peakMemoryNodes > r.peakMemoryNodes) {
+        spaceComparison = `For this scan, <strong>DFS was more memory-efficient</strong>, holding a peak of ${fmt(r.peakMemoryNodes)} nodes, compared to BFS which held a peak of ${fmt(b.peakMemoryNodes)} nodes. This is typical because DFS space complexity is bounded by depth <em>O(h)</em>, while BFS is bounded by width <em>O(w)</em>.`;
+    } else {
+        spaceComparison = `Both DFS and BFS required the same peak space of ${fmt(r.peakMemoryNodes)} nodes.`;
+    }
+
+    const algos = [
+        { name: 'Recursive DFS', time: r.timeTaken, tpn: r.timePerNodeNs, color: 'var(--accent-blue)' },
+        { name: 'Iterative DFS', time: i.timeTaken, tpn: i.timePerNodeNs, color: 'var(--accent-purple)' },
+        { name: 'BFS', time: b.timeTaken, tpn: b.timePerNodeNs, color: 'var(--accent-green)' }
+    ];
+    algos.sort((x, y) => x.time - y.time);
+    const fastestAlgo = algos[0];
+    const slowestAlgo = algos[2];
+    const speedup = (slowestAlgo.time / (fastestAlgo.time || 0.000001)).toFixed(1);
+
+    let perfText = `<strong>${fastestAlgo.name}</strong> was the fastest, processing each item in <span style="color:${fastestAlgo.color};font-weight:bold;">${fastestAlgo.tpn.toFixed(1)} ns</span>, which is <strong>${speedup}x</strong> faster than ${slowestAlgo.name}.`;
+    
+    let constantText = "";
+    if (fastestAlgo.name === 'Recursive DFS') {
+        constantText = `Recursive DFS is faster here because it uses the hardware execution stack (CPU call stack) which has zero heap management overhead, isolating a very small constant factor <em>c</em>. However, if this directory went thousands of levels deep, it would risk a Stack Overflow.`;
+    } else {
+        constantText = `Iterative DFS or BFS was faster here, which typically occurs due to OS-level disk caching or CPU thread scheduling differences during the sequential execution of the three scans.`;
+    }
+
+    let reallocText = "";
+    const totalReallocs = i.reallocCount + b.reallocCount;
+    if (totalReallocs > 0) {
+        reallocText = `To support this scan, the heap arrays resized a total of <strong>${totalReallocs} times</strong>. Under the current growth policy, these resizes were performed efficiently.`;
+    } else {
+        reallocText = `No dynamic array resizes occurred because the initial capacities (128 slots) were large enough to hold the frontier.`;
+    }
+
+    const scanInsightsHtml = `
+      <div class="insights-grid" style="font-size:0.9rem;line-height:1.5;">
+        <div>
+          <h4 style="color:var(--accent-cyan);margin-bottom:8px;font-size:0.95rem;">${shapeIcon} Directory Structure &amp; Space Complexity</h4>
+          <p style="color:var(--text-muted);margin-bottom:8px;">${shapeText}</p>
+          <ul style="padding-left:18px;margin:0;color:var(--text-muted);font-size:0.85rem;line-height:1.6;">
+            <li><strong>DFS memory</strong> peaked at <span style="color:var(--accent-blue);font-weight:700;">${fmt(r.peakMemoryNodes)}</span> active nodes.</li>
+            <li><strong>BFS memory</strong> peaked at <span style="color:var(--accent-green);font-weight:700;">${fmt(b.peakMemoryNodes)}</span> active nodes.</li>
+          </ul>
+          <p style="color:var(--text-muted);margin-top:8px;">${spaceComparison}</p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent-purple);margin-bottom:8px;font-size:0.95rem;">⚡ Traversal Time &amp; Constant Factors</h4>
+          <p style="color:var(--text-muted);margin-bottom:8px;">${perfText}</p>
+          <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:8px;">${constantText}</p>
+          <p style="color:var(--text-muted);font-size:0.85rem;margin:0;"><strong>Dynamic resizing:</strong> ${reallocText}</p>
+        </div>
+      </div>
+    `;
+    
+    document.getElementById('scan-insights-content').innerHTML = scanInsightsHtml;
+
+    document.getElementById('results').classList.add('visible');
+}
+
+/* ---- Render benchmark ---- */
+function renderBenchmark(data) {
+    const deep = data.deepTree.algorithms;
+    const wide = data.wideTree.algorithms;
+
+    if (chartBenchDeep) chartBenchDeep.destroy();
+    if (chartBenchWide) chartBenchWide.destroy();
+
+    const makeGrouped = (canvasId, chartData) => {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        return new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ALGO_LABELS,
+                datasets: [{
+                    label: 'Peak Nodes',
+                    data: chartData,
+                    backgroundColor: ALGO_BG,
+                    borderColor: ALGO_COLORS,
+                    borderWidth: 2, borderRadius: 8, borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: { label: ctx => ` ${fmt(ctx.raw)} nodes` }
+                    }
+                },
+                scales: {
+                    x: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+                    y: { grid: { color: '#1e2d45' }, ticks: { color: '#94a3b8', font: { size: 11 }, callback: value => fmt(value) }, beginAtZero: true }
+                },
+                animation: { duration: 700 }
+            }
+        });
+    };
+
+    chartBenchDeep = makeGrouped('chart-bench-deep',
+        [deep.recursiveDfs.peakMemoryNodes, deep.iterativeDfs.peakMemoryNodes, deep.bfs.peakMemoryNodes]);
+    chartBenchWide = makeGrouped('chart-bench-wide',
+        [wide.recursiveDfs.peakMemoryNodes, wide.iterativeDfs.peakMemoryNodes, wide.bfs.peakMemoryNodes]);
+
+    const makeMetricTable = (algos) => {
+        const r = algos.recursiveDfs;
+        const i = algos.iterativeDfs;
+        const b = algos.bfs;
+        
+        return `
+            <table class="result-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th style="color:var(--accent-blue);">Recursive DFS</th>
+                        <th style="color:var(--accent-purple);">Iterative DFS</th>
+                        <th style="color:var(--accent-green);">BFS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Files Scanned</td>
+                        <td class="num">${fmt(r.fileCount)}</td>
+                        <td class="num">${fmt(i.fileCount)}</td>
+                        <td class="num">${fmt(b.fileCount)}</td>
+                    </tr>
+                    <tr>
+                        <td>Folders Scanned</td>
+                        <td class="num">${fmt(r.folderCount)}</td>
+                        <td class="num">${fmt(i.folderCount)}</td>
+                        <td class="num">${fmt(b.folderCount)}</td>
+                    </tr>
+                    <tr>
+                        <td>Max Depth</td>
+                        <td class="num">${r.maxDepth}</td>
+                        <td class="num">${i.maxDepth}</td>
+                        <td class="num">${b.maxDepth}</td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight:600;color:var(--text);">Peak Memory Nodes</td>
+                        <td class="num" style="font-weight:bold;color:var(--accent-cyan);">${fmt(r.peakMemoryNodes)}</td>
+                        <td class="num" style="font-weight:bold;color:var(--accent-cyan);">${fmt(i.peakMemoryNodes)}</td>
+                        <td class="num" style="font-weight:bold;color:var(--accent-cyan);">${fmt(b.peakMemoryNodes)}</td>
+                    </tr>
+                    <tr>
+                        <td>Reallocations</td>
+                        <td class="num">${r.reallocCount}</td>
+                        <td class="num">${i.reallocCount}</td>
+                        <td class="num">${b.reallocCount}</td>
+                    </tr>
+                    <tr>
+                        <td>Time (ns)</td>
+                        <td class="num">${fmt(Math.round(r.timeTaken * 1e9))}</td>
+                        <td class="num">${fmt(Math.round(i.timeTaken * 1e9))}</td>
+                        <td class="num">${fmt(Math.round(b.timeTaken * 1e9))}</td>
+                    </tr>
+                    <tr>
+                        <td>Time/Node (ns)</td>
+                        <td class="num">${r.timePerNodeNs.toFixed(1)}</td>
+                        <td class="num">${i.timePerNodeNs.toFixed(1)}</td>
+                        <td class="num">${b.timePerNodeNs.toFixed(1)}</td>
+                    </tr>
+                </tbody>
+            </table>
+        `;
+    };
+
+    document.getElementById('bench-deep-metrics').innerHTML = makeMetricTable(deep);
+    document.getElementById('bench-wide-metrics').innerHTML = makeMetricTable(wide);
+
+    const insightsHtml = `
+      <div class="insights-grid">
+        <div>
+          <h4 style="color:var(--accent-blue);margin-bottom:8px;font-size:0.95rem;">🌲 Deep Tree Observations (Depth: 200)</h4>
+          <ul style="padding-left:18px;margin:0;color:var(--text-muted);font-size:0.85rem;line-height:1.6;">
+            <li><strong>Recursive DFS</strong> call stack peaked at <span style="color:var(--accent-blue);font-weight:700;">${deep.recursiveDfs.peakMemoryNodes}</span> active frames. This empirically demonstrates the linear space growth <span style="color:var(--accent-blue);">O(h)</span>, risking stack overflow on deep paths.</li>
+            <li><strong>Iterative DFS</strong> stack peaked at <span style="color:var(--accent-purple);font-weight:700;">${deep.iterativeDfs.peakMemoryNodes}</span> node. Since there is no branching (each folder has exactly one child), the stack size stays at <span style="color:var(--accent-purple);">O(1)</span> as it pops the parent before pushing the child.</li>
+            <li><strong>BFS</strong> queue peaked at <span style="color:var(--accent-green);font-weight:700;">${deep.bfs.peakMemoryNodes}</span> node, matching the tree's maximum level width <span style="color:var(--accent-green);">O(w) = 1</span>.</li>
+          </ul>
+          <p style="margin-top:12px;font-size:0.8rem;color:#64748b;line-height:1.4;">
+            💡 <em>Takeaway:</em> Recursive DFS space complexity is bound to the stack height. In contrast, Iterative DFS on a chain is extremely lightweight.
+          </p>
+        </div>
+        <div>
+          <h4 style="color:var(--accent-green);margin-bottom:8px;font-size:0.95rem;">🌳 Wide Tree Observations (Width: 1,000)</h4>
+          <ul style="padding-left:18px;margin:0;color:var(--text-muted);font-size:0.85rem;line-height:1.6;">
+            <li><strong>Recursive DFS</strong> stack peaked at <span style="color:var(--accent-blue);font-weight:700;">${wide.recursiveDfs.peakMemoryNodes}</span> frame. It explores subdirectories recursively, returning immediately and cleaning up the call stack, avoiding storing siblings.</li>
+            <li><strong>Iterative DFS</strong> stack peaked at <span style="color:var(--accent-purple);font-weight:700;">${wide.iterativeDfs.peakMemoryNodes}</span> nodes. All siblings at the root level are pushed to the stack at once.</li>
+            <li><strong>BFS</strong> queue peaked at <span style="color:var(--accent-green);font-weight:700;">${wide.bfs.peakMemoryNodes}</span> nodes. BFS must hold the entire level's frontier simultaneously in the queue, proving the <span style="color:var(--accent-green);">O(w)</span> memory bottleneck on wide structures.</li>
+          </ul>
+          <p style="margin-top:12px;font-size:0.8rem;color:#64748b;line-height:1.4;">
+            💡 <em>Takeaway:</em> On wide shallow trees, BFS consumes 1000x more memory than Recursive DFS because it tracks the entire level width at once.
+          </p>
+        </div>
+      </div>
+    `;
+    document.getElementById('bench-insights-content').innerHTML = insightsHtml;
+
+    document.getElementById('benchmark-results').style.display = 'block';
+}
+
+/* ---- UI helpers ---- */
+function setLoading(which, on) {
+    const btn     = document.getElementById(`${which}-btn`);
+    const spinner = document.getElementById(`${which}-spinner`);
+    const label   = document.getElementById(`${which}-label`);
+    btn.disabled    = on;
+    spinner.style.display = on ? 'block' : 'none';
+    label.style.display   = on ? 'none'  : 'block';
+}
+
+function showStatus(msg, type) {
+    const bar = document.getElementById('status-bar');
+    const txt = document.getElementById('status-text');
+    const ico = document.getElementById('status-icon');
+    txt.textContent = msg;
+    ico.textContent = type === 'error' ? '❌' : type === 'success' ? '✅' : '⏳';
+    bar.className = `visible ${type}`;
+}
+
+/* ================================================================
+   TREE ANIMATION
+   ================================================================
+   A simple 7-node binary tree is drawn in SVG.
+   Nodes: 1(root) → children 2,3 → 4,5,6,7
+   DFS order: 1,2,4,5,3,6,7  (pre-order)
+   BFS order: 1,2,3,4,5,6,7
+================================================================ */
+
+const TREE_NODES = [
+    { id:1, x:170, y:30,  label:'/' },
+    { id:2, x:90,  y:90,  label:'A' },
+    { id:3, x:250, y:90,  label:'B' },
+    { id:4, x:50,  y:160, label:'A1' },
+    { id:5, x:130, y:160, label:'A2' },
+    { id:6, x:210, y:160, label:'B1' },
+    { id:7, x:290, y:160, label:'B2' }
+];
+const TREE_EDGES = [[1,2],[1,3],[2,4],[2,5],[3,6],[3,7]];
+const DFS_ORDER  = [1,2,4,5,3,6,7];
+const BFS_ORDER  = [1,2,3,4,5,6,7];
+
+function buildTree(svgId) {
+    const svg = document.getElementById(svgId);
+    svg.innerHTML = '';
+
+    /* Edges */
+    TREE_EDGES.forEach(([a, b]) => {
+        const na = TREE_NODES[a-1], nb = TREE_NODES[b-1];
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', na.x); line.setAttribute('y1', na.y + 14);
+        line.setAttribute('x2', nb.x); line.setAttribute('y2', nb.y - 14);
+        line.setAttribute('class', 'edge');
+        svg.appendChild(line);
+    });
+
+    /* Nodes */
+    TREE_NODES.forEach(n => {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.id = `${svgId}-node-${n.id}`;
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', n.x); circle.setAttribute('cy', n.y); circle.setAttribute('r', 16);
+        circle.setAttribute('class', 'node-unvisited');
+
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', n.x); text.setAttribute('y', n.y + 4);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('fill', '#94a3b8'); text.setAttribute('font-size', '11');
+        text.setAttribute('font-family', 'Consolas, monospace');
+        text.textContent = n.label;
+
+        g.appendChild(circle); g.appendChild(text);
+        svg.appendChild(g);
+    });
+}
+
+function highlightNode(svgId, nodeId, visitedClass) {
+    const g = document.getElementById(`${svgId}-node-${nodeId}`);
+    if (!g) return;
+    const circle = g.querySelector('circle');
+    const text   = g.querySelector('text');
+    circle.setAttribute('class', visitedClass);
+    text.setAttribute('fill', '#f1f5f9');
+}
+
+async function runAnimation(svgId, order, visitedClass, logId) {
+    buildTree(svgId);
+    document.getElementById(logId).textContent = 'Visiting: ';
+    const log = document.getElementById(logId);
+    const visited = [];
+
+    for (let i = 0; i < order.length; i++) {
+        const nodeId = order[i];
+        const node   = TREE_NODES[nodeId - 1];
+
+        /* Flash yellow (currently visiting) */
+        highlightNode(svgId, nodeId, 'node-visiting');
+        visited.push(node.label);
+        log.textContent = 'Visiting: ' + visited.join(' → ');
+
+        await sleep(700);
+
+        /* Settle to visited colour */
+        highlightNode(svgId, nodeId, visitedClass);
+    }
+    log.textContent = 'Done! Order: ' + visited.join(' → ');
+}
+
+function animateDFS() { runAnimation('svg-dfs', DFS_ORDER, 'node-visited',     'log-dfs'); }
+function animateBFS() { runAnimation('svg-bfs', BFS_ORDER, 'node-visited-bfs', 'log-bfs'); }
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+/* Init trees on page load */
+buildTree('svg-dfs');
+buildTree('svg-bfs');
+
+/* Handle Enter key in path input */
+document.getElementById('path-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') startScan();
+});
+</script>
+
+</body>
+</html>

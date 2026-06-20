@@ -1,0 +1,10 @@
+{
+  "name": "daa-file-counter-dashboard",
+  "version": "1.0.0",
+  "description": "Web dashboard for Recursive File Folder Counter - DAA project",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}

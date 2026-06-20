@@ -2,3 +2,14 @@ build/
 *.exe
 *.o
 *.obj
+
+# Dependency directories
+node_modules/
+
+# IDE and editors
+.idea/
+.vscode/
+*.suo
+*.swp
+Thumbs.db
+Desktop.ini
