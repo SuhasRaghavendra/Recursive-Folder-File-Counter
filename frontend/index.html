@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DAA File System Analyzer — Algorithm Comparison Dashboard</title>
-  <meta name="description" content="Compare Recursive DFS, Iterative DFS, and BFS algorithms for filesystem traversal — DAA project dashboard." />
+  <title>Recursive File Folder Counter — Algorithm Comparison Dashboard</title>
+  <meta name="description" content="Compare Recursive DFS, Iterative DFS, and BFS algorithms for filesystem traversal — Recursive File Folder Counter Dashboard." />
 
   <!-- Chart.js from CDN — only external dependency -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -69,12 +69,34 @@
       display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
     }
     .header-icon {
-      width: 48px; height: 48px; border-radius: 12px;
-      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      width: 48px; height: 48px; border-radius: 14px;
+      background: linear-gradient(135deg, #0284c7 0%, #7c3aed 50%, #db2777 100%);
+      box-shadow: 0 8px 24px rgba(124, 58, 237, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.2);
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.5rem; flex-shrink: 0;
+      flex-shrink: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1.5px solid rgba(255, 255, 255, 0.15);
     }
-    .header-text h1 { font-size: 1.5rem; }
+    .header-icon:hover {
+      transform: translateY(-2px) scale(1.06) rotate(3deg);
+      box-shadow: 0 12px 28px rgba(124, 58, 237, 0.4), inset 0 1px 1.5px rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+    .header-text h1 {
+      font-size: 1.65rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+      text-shadow: 
+        -1.5px -0.5px 0px rgba(255, 0, 85, 0.6), 
+        1.5px 0.5px 0px rgba(0, 243, 255, 0.6);
+      transition: text-shadow 0.3s ease;
+    }
+    .header-text h1:hover {
+      text-shadow: 
+        -2.5px -0.8px 0px rgba(255, 0, 85, 0.85), 
+        2.5px 0.8px 0px rgba(0, 243, 255, 0.85);
+    }
     .header-text p  { color: var(--text-muted); font-size: 0.85rem; margin-top: 2px; }
     .algo-pills { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; }
     .pill {
@@ -304,9 +326,32 @@
 ================================================================ -->
 <header>
   <div class="header-inner">
-    <div class="header-icon">🌲</div>
+    <div class="header-icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Main Folder outline -->
+        <path d="M2.5 5.5A1.5 1.5 0 0 1 4 4h4.5l2 2H20a1.5 1.5 0 0 1 1.5 1.5v11A1.5 1.5 0 0 1 20 20H4a1.5 1.5 0 0 1-1.5-1.5V5.5z" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round" />
+        
+        <!-- Folder content/tabs / internal grid -->
+        <path d="M7 9h10" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-linecap="round" />
+        
+        <!-- Nested tree structure (Recursive) -->
+        <!-- Root node -->
+        <circle cx="8" cy="14" r="1.5" fill="#ffffff" />
+        <!-- Child node 1 -->
+        <circle cx="13" cy="12" r="1.5" fill="#67e8f9" />
+        <!-- Child node 2 -->
+        <circle cx="13" cy="16" r="1.5" fill="#f472b6" />
+        <!-- Child node 3 -->
+        <circle cx="17" cy="16" r="1.5" fill="#34d399" />
+        
+        <!-- Connecting lines -->
+        <line x1="8" y1="14" x2="13" y2="12" stroke="rgba(255,255,255,0.7)" stroke-width="1.2" />
+        <line x1="8" y1="14" x2="13" y2="16" stroke="rgba(255,255,255,0.7)" stroke-width="1.2" />
+        <line x1="13" y1="16" x2="17" y2="16" stroke="rgba(255,255,255,0.7)" stroke-width="1.2" />
+      </svg>
+    </div>
     <div class="header-text">
-      <h1>DAA File System Analyzer</h1>
+      <h1>Recursive File Folder Counter</h1>
       <p>Recursive DFS · Iterative DFS · BFS — Space &amp; Time Complexity Comparison</p>
     </div>
     <div class="algo-pills">
@@ -397,7 +442,7 @@
         <div class="metric-label rdfs">🔵 Recursive DFS</div>
         <div class="metric-row"><span class="metric-name">Files</span>        <span class="metric-value num" id="r-files">—</span></div>
         <div class="metric-row"><span class="metric-name">Folders</span>      <span class="metric-value num" id="r-folders">—</span></div>
-        <div class="metric-row"><span class="metric-name">Time (s)</span>     <span class="metric-value num" id="r-time">—</span></div>
+        <div class="metric-row"><span class="metric-name">Time (ms)</span>    <span class="metric-value num" id="r-time">—</span></div>
         <div class="metric-row"><span class="metric-name">Max Depth</span>    <span class="metric-value num" id="r-depth">—</span></div>
         <div class="metric-row"><span class="metric-name">Peak Nodes</span>   <span class="metric-value num" id="r-peak">— <small style="font-size:0.7rem;color:var(--text-dim)">(call stack)</small></span></div>
         <div class="metric-row"><span class="metric-name">Time/Node ns</span><span class="metric-value num" id="r-tpn">—</span></div>
@@ -407,7 +452,7 @@
         <div class="metric-label idfs">🟣 Iterative DFS</div>
         <div class="metric-row"><span class="metric-name">Files</span>        <span class="metric-value num" id="i-files">—</span></div>
         <div class="metric-row"><span class="metric-name">Folders</span>      <span class="metric-value num" id="i-folders">—</span></div>
-        <div class="metric-row"><span class="metric-name">Time (s)</span>     <span class="metric-value num" id="i-time">—</span></div>
+        <div class="metric-row"><span class="metric-name">Time (ms)</span>    <span class="metric-value num" id="i-time">—</span></div>
         <div class="metric-row"><span class="metric-name">Max Depth</span>    <span class="metric-value num" id="i-depth">—</span></div>
         <div class="metric-row"><span class="metric-name">Peak Nodes</span>   <span class="metric-value num" id="i-peak">—</span></div>
         <div class="metric-row"><span class="metric-name">Time/Node ns</span><span class="metric-value num" id="i-tpn">—</span></div>
@@ -417,7 +462,7 @@
         <div class="metric-label bfs">🟢 BFS</div>
         <div class="metric-row"><span class="metric-name">Files</span>        <span class="metric-value num" id="b-files">—</span></div>
         <div class="metric-row"><span class="metric-name">Folders</span>      <span class="metric-value num" id="b-folders">—</span></div>
-        <div class="metric-row"><span class="metric-name">Time (s)</span>     <span class="metric-value num" id="b-time">—</span></div>
+        <div class="metric-row"><span class="metric-name">Time (ms)</span>    <span class="metric-value num" id="b-time">—</span></div>
         <div class="metric-row"><span class="metric-name">Max Depth</span>    <span class="metric-value num" id="b-depth">—</span></div>
         <div class="metric-row"><span class="metric-name">Peak Nodes</span>   <span class="metric-value num" id="b-peak">—</span></div>
         <div class="metric-row"><span class="metric-name">Time/Node ns</span><span class="metric-value num" id="b-tpn">—</span></div>
@@ -431,7 +476,7 @@
 
     <div class="charts-grid fade-in">
       <div class="card chart-card">
-        <h3>⏱️ Execution Time (nanoseconds)</h3>
+        <h3>⏱️ Execution Time (milliseconds)</h3>
         <div class="chart-wrapper"><canvas id="chart-time"></canvas></div>
       </div>
       <div class="card chart-card">
@@ -629,7 +674,7 @@ function renderResults(result) {
     const fill = (pfx, s) => {
         document.getElementById(`${pfx}-files`).textContent   = fmt(s.fileCount);
         document.getElementById(`${pfx}-folders`).textContent = fmt(s.folderCount);
-        document.getElementById(`${pfx}-time`).textContent    = s.timeTaken.toFixed(4);
+        document.getElementById(`${pfx}-time`).textContent    = (s.timeTaken * 1000).toFixed(2);
         document.getElementById(`${pfx}-depth`).textContent   = s.maxDepth;
         document.getElementById(`${pfx}-peak`).textContent    = fmt(s.peakMemoryNodes);
         document.getElementById(`${pfx}-tpn`).textContent     = s.timePerNodeNs.toFixed(2);
@@ -654,7 +699,7 @@ function renderResults(result) {
     if (chartRealloc) chartRealloc.destroy();
     if (chartTpn)     chartTpn.destroy();
 
-    chartTime    = makeBarChart('chart-time',    'Time (ns)',     [r.timeTaken * 1e9, i.timeTaken * 1e9, b.timeTaken * 1e9], 'ns');
+    chartTime    = makeBarChart('chart-time',    'Time (ms)',     [r.timeTaken * 1000, i.timeTaken * 1000, b.timeTaken * 1000], 'ms');
     chartMem     = makeBarChart('chart-memory',  'Peak Nodes',    [r.peakMemoryNodes, i.peakMemoryNodes, b.peakMemoryNodes], 'nodes');
     chartRealloc = makeBarChart('chart-realloc', 'Reallocs',      [r.reallocCount,    i.reallocCount,    b.reallocCount],    'reallocations');
     chartTpn     = makeBarChart('chart-tpn',     'Time/Node(ns)', [r.timePerNodeNs,   i.timePerNodeNs,   b.timePerNodeNs],   'ns');
@@ -825,10 +870,10 @@ function renderBenchmark(data) {
                         <td class="num">${b.reallocCount}</td>
                     </tr>
                     <tr>
-                        <td>Time (ns)</td>
-                        <td class="num">${fmt(Math.round(r.timeTaken * 1e9))}</td>
-                        <td class="num">${fmt(Math.round(i.timeTaken * 1e9))}</td>
-                        <td class="num">${fmt(Math.round(b.timeTaken * 1e9))}</td>
+                        <td>Time (ms)</td>
+                        <td class="num">${(r.timeTaken * 1000).toFixed(3)}</td>
+                        <td class="num">${(i.timeTaken * 1000).toFixed(3)}</td>
+                        <td class="num">${(b.timeTaken * 1000).toFixed(3)}</td>
                     </tr>
                     <tr>
                         <td>Time/Node (ns)</td>
